@@ -1,36 +1,30 @@
 import Foundation
 
-enum PublicationKind: String, Codable, Sendable {
-    case pdf
-    case lcpdf
-    case unknown
-}
-
 struct LibraryItem: Identifiable, Codable, Hashable, Sendable {
     var id: UUID
     var title: String
     var author: String?
     var fileBookmark: Data
-    var kind: PublicationKind
+    var kind: PublicationFormat
     var pageCount: Int?
     var lastOpened: Date
     var lastPageIndex: Int
     var addedAt: Date
     var coverData: Data?
-    var lcpSummary: LCPLicenseSummary?
+    var lcpSummary: LCPLicenseInfo?
 
     init(
         id: UUID = UUID(),
         title: String,
         author: String? = nil,
         fileBookmark: Data,
-        kind: PublicationKind,
+        kind: PublicationFormat,
         pageCount: Int? = nil,
         lastOpened: Date = .now,
         lastPageIndex: Int = 0,
         addedAt: Date = .now,
         coverData: Data? = nil,
-        lcpSummary: LCPLicenseSummary? = nil
+        lcpSummary: LCPLicenseInfo? = nil
     ) {
         self.id = id
         self.title = title
@@ -47,26 +41,11 @@ struct LibraryItem: Identifiable, Codable, Hashable, Sendable {
 
     func resolvedURL() throws -> URL {
         var isStale = false
-        let url = try URL(
+        return try URL(
             resolvingBookmarkData: fileBookmark,
             options: [.withSecurityScope],
             relativeTo: nil,
             bookmarkDataIsStale: &isStale
         )
-        return url
     }
-}
-
-struct LCPLicenseSummary: Codable, Hashable, Sendable {
-    var provider: String?
-    var issued: String?
-    var profile: String?
-    var printAllowance: Int?
-    var copyAllowance: Int?
-    var start: String?
-    var end: String?
-    var encrypted: Bool
-    var pageCount: Int?
-    var title: String?
-    var statusMessage: String
 }

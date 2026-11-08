@@ -24,12 +24,9 @@ struct ReaderCanvas: View {
                 searchQuery: session.searchQuery,
                 goToSearchMatch: activeSearchMatch,
                 onCopyRequest: { text in
-                    let allowed = session.consumeCopyAllowance(characterCount: text.count)
+                    let allowed = session.clipboard.copyPlainText(text)
                     if !allowed {
                         copyBlockedMessage = "Copy not allowed: LCP character limit reached."
-                    } else if let remaining = session.remainingCopyCharacters {
-                        // Keep UX quiet; remaining is shown in the sidebar.
-                        _ = remaining
                     }
                     return allowed
                 }

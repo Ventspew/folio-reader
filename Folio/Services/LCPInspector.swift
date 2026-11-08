@@ -1,64 +1,6 @@
 import Foundation
 import zlib
 
-/// Read-only inspection of Readium LCP for PDF packages.
-/// Does **not** decrypt content or extract cryptographic secrets.
-enum LCPInspector {
-    static func inspect(url: URL) throws -> LCPLicenseSummary {
-        let archive = try ZipReader(url: url)
-        let manifestData = try archive.data(for: "manifest.json")
-        let licenseData = try archive.data(for: "license.lcpl")
-
-        let manifest = try JSONSerialization.jsonObject(with: manifestData) as? [String: Any] ?? [:]
-        let license = try JSONSerialization.jsonObject(with: licenseData) as? [String: Any] ?? [:]
-
-        let metadata = manifest["metadata"] as? [String: Any]
-        let title = metadata?["title"] as? String
-        let pageCount = metadata?["numberOfPages"] as? Int
-
-        let readingOrder = manifest["readingOrder"] as? [[String: Any]] ?? []
-        let encrypted = readingOrder.contains { entry in
-            let props = entry["properties"] as? [String: Any]
-            let enc = props?["encrypted"] as? [String: Any]
-            return enc != nil
-        }
-
-        let encryption = license["encryption"] as? [String: Any]
-        let rights = license["rights"] as? [String: Any]
-
-        let end = rights?["end"] as? String
-        var status = "LCP-protected publication"
-        if encrypted {
-            status = "Encrypted with Readium LCP. Official macOS decryption requires EDRLab’s private R2LCPClient (not bundled)."
-        }
-        if let end {
-            status += " License ends: \(end)."
-        }
-
-        return LCPLicenseSummary(
-            provider: license["provider"] as? String,
-            issued: license["issued"] as? String,
-            profile: encryption?["profile"] as? String,
-            printAllowance: rights?["print"] as? Int,
-            copyAllowance: rights?["copy"] as? Int,
-            start: rights?["start"] as? String,
-            end: end,
-            encrypted: encrypted,
-            pageCount: pageCount,
-            title: title,
-            statusMessage: status
-        )
-    }
-
-    static func extractCover(from url: URL) throws -> Data? {
-        let archive = try ZipReader(url: url)
-        if let jpg = try? archive.data(for: "cover.jpg") { return jpg }
-        if let jpeg = try? archive.data(for: "cover.jpeg") { return jpeg }
-        if let png = try? archive.data(for: "cover.png") { return png }
-        return nil
-    }
-}
-
 /// Minimal ZIP reader for uncompressed / deflated local file headers.
 /// Sufficient for Readium LCPDF packages (manifest, license, cover).
 final class ZipReader {

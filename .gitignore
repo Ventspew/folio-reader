@@ -39,3 +39,7 @@ dist/
 *.xcconfig.local
 .env
 R2LCPClient.framework/
+Vendor/R2LCPClient/*.framework/
+Vendor/R2LCPClient/*.xcframework/
+!Vendor/R2LCPClient/README.md
+dist/

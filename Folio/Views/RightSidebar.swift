@@ -33,7 +33,7 @@ struct RightSidebar: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Study")
                 .font(.headline)
-            if let remaining = session.remainingCopyCharacters {
+            if let remaining = session.clipboard.remainingCharacters {
                 Text("LCP copy remaining: \(remaining) characters")
                     .font(.caption)
                     .foregroundStyle(.secondary)

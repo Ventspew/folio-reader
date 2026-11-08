@@ -60,7 +60,7 @@ struct LeftSidebar: View {
                                 .lineLimit(2)
                                 .font(.body.weight(.medium))
                             HStack(spacing: 6) {
-                                Text(item.kind == .lcpdf ? "LCPDF" : "PDF")
+                                Text(item.kind == .lcpdf ? "LCP" : "PDF")
                                     .font(.caption2.weight(.semibold))
                                     .padding(.horizontal, 6)
                                     .padding(.vertical, 2)
@@ -164,7 +164,7 @@ struct LeftSidebar: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: 4)
                         .fill(.quaternary)
-                    Image(systemName: item.kind == .lcpdf ? "lock.doc" : "doc.richtext")
+                    Image(systemName: item.kind == .lcpdf ? "lock.doc.fill" : "doc.richtext")
                         .foregroundStyle(.secondary)
                 }
             }

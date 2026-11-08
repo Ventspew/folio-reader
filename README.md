@@ -1,41 +1,32 @@
 # Folio
 
-Native macOS academic e-book reader (Swift 6 + SwiftUI + PDFKit).
+Native macOS academic reader — Swift 6, SwiftUI, PDFKit — with a prepared **authorized** Readium LCP integration seam.
 
 ## Features
 
-- Open standard PDFs with PDFKit
-- Mouse text selection, ⌘C / Edit → Copy / context menu copy
-- Full-text search, zoom, page navigation
-- Highlights (multiple colors), bookmarks, notes
-- Persistent library + reading progress
-- Citation copy with page numbers (⇧⌘C)
+- Standard PDFs: selection, ⌘C copy, search, zoom, navigation
+- Highlights, bookmarks, notes, reading progress (local)
+- Citation copy (⇧⌘C)
 - Light / dark appearance
-- Readium `.lcpdf` **metadata inspection** (license rights, title, page count, cover)
+- Professional Folio app icon
+- `.lcpdf` import: metadata, cover, license rights, passphrase UI + Keychain
+- LCP decryption via EDRLab `R2LCPClient` when linked (see [docs/LCP-INTEGRATION.md](docs/LCP-INTEGRATION.md))
 
-## Readium LCP status
+## LCP status
 
-Official Readium Swift LCP support requires EDRLab’s private `R2LCPClient` and currently targets iOS. Folio does **not** decrypt LCP content or bypass DRM.
+Folio does **not** bypass DRM. Production LCP profiles require EDRLab’s private macOS client and certification. Until that framework is linked, Folio inspects LCP packages and guides you through the official request process. Use [Thorium](https://www.thoriumreader.com) for certified encrypted reading today.
 
-When you open an `.lcpdf`, Folio shows license metadata and explains the limitation. Use [Thorium Reader](https://www.thoriumreader.com) for encrypted LCP reading.
-
-## Requirements
-
-- macOS 14+
-- Xcode 16+ (for local builds)
-
-## Local build
+## Build
 
 ```bash
 brew install xcodegen
 xcodegen generate
-xcodebuild -scheme Folio -configuration Release -derivedDataPath build CODE_SIGNING_ALLOWED=NO
-open build/Build/Products/Release/Folio.app
+xcodebuild -scheme Folio -configuration Release -derivedDataPath build \
+  -destination 'platform=macOS,arch=arm64' ONLY_ACTIVE_ARCH=YES \
+  CODE_SIGNING_ALLOWED=NO
 ```
 
-## GitHub DMG
-
-Pushing to `main` or running the **Build DMG** workflow produces a downloadable `Folio.dmg` artifact (and a GitHub Release on tags `v*`).
+GitHub Actions builds a DMG on every `main` push.
 
 ## License
 

@@ -24,7 +24,7 @@ struct WelcomeView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Label("PDFKit text selection & ⌘C copy", systemImage: "checkmark.circle")
                 Label("Highlights, notes, bookmarks", systemImage: "checkmark.circle")
-                Label("LCPDF metadata inspection (no DRM bypass)", systemImage: "checkmark.circle")
+                Label("LCPDF import + authorized R2LCPClient seam", systemImage: "checkmark.circle")
             }
             .font(.callout)
             .foregroundStyle(.secondary)

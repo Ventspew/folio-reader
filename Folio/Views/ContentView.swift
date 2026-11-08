@@ -10,22 +10,28 @@ struct ContentView: View {
     @State private var showGoToPage = false
     @State private var goToPageText = ""
     @State private var showFinder = false
-    @State private var findFocused = false
 
     var body: some View {
-        @Bindable var library = library
         NavigationSplitView {
             LeftSidebar(selectedTab: $leftTab)
                 .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 340)
         } content: {
             Group {
                 if let session = library.readerSession {
-                    if session.isLCPBlocked {
-                        LCPBlockedView(summary: session.lcpSummary)
-                    } else if let document = session.document {
+                    if session.isReadable, let document = session.document {
                         ReaderCanvas(session: session, document: document)
                     } else {
-                        ContentUnavailableView("Unable to open document", systemImage: "exclamationmark.triangle")
+                        LCPBlockedView(
+                            summary: session.lcpInfo,
+                            clientStatus: session.lcpBlockedReason ?? library.lcpClientStatus,
+                            onEnterPassphrase: {
+                                library.pendingPassphraseItemID = session.itemID
+                                library.passphrasePromptTitle = session.lcpInfo?.title
+                                    ?? library.selectedItem?.title
+                                    ?? "Publication"
+                                library.showPassphraseSheet = true
+                            }
+                        )
                     }
                 } else {
                     WelcomeView(onOpen: openDocument)
@@ -38,13 +44,9 @@ struct ContentView: View {
         }
         .toolbar {
             ToolbarItemGroup(placement: .navigation) {
-                Button {
-                    openDocument()
-                } label: {
+                Button(action: openDocument) {
                     Label("Open", systemImage: "folder")
                 }
-                .help("Open PDF or LCPDF")
-
                 if library.readerSession != nil {
                     Button {
                         library.closeReader()
@@ -53,7 +55,6 @@ struct ContentView: View {
                     }
                 }
             }
-
             ToolbarItemGroup(placement: .principal) {
                 if let session = library.readerSession, session.document != nil {
                     ReaderToolbar(session: session, showFinder: $showFinder)
@@ -73,9 +74,15 @@ struct ContentView: View {
                 library.readerSession?.currentPageIndex = max(0, min(page - 1, (library.readerSession?.pageCount ?? 1) - 1))
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .folioOpenDocument)) { _ in
-            openDocument()
+        .sheet(isPresented: Binding(
+            get: { library.showPassphraseSheet },
+            set: { library.showPassphraseSheet = $0 }
+        )) {
+            PassphraseSheet(title: library.passphrasePromptTitle) { phrase in
+                try library.submitPassphrase(phrase)
+            }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .folioOpenDocument)) { _ in openDocument() }
         .onReceive(NotificationCenter.default.publisher(for: .folioPreviousPage)) { _ in
             guard let session = library.readerSession else { return }
             session.currentPageIndex = max(0, session.currentPageIndex - 1)
@@ -97,15 +104,8 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .folioZoomReset)) { _ in
             library.readerSession?.zoomScale = 1.0
         }
-        .onReceive(NotificationCenter.default.publisher(for: .folioFind)) { _ in
-            showFinder = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .folioCopyCitation)) { _ in
-            copyCitation()
-        }
-        .onAppear {
-            maybeImportDefaultTestFiles()
-        }
+        .onReceive(NotificationCenter.default.publisher(for: .folioFind)) { _ in showFinder = true }
+        .onReceive(NotificationCenter.default.publisher(for: .folioCopyCitation)) { _ in copyCitation() }
     }
 
     private func openDocument() {
@@ -119,7 +119,7 @@ struct ContentView: View {
             do {
                 let item = try library.importURL(url)
                 try library.open(item)
-                leftTab = .contents
+                leftTab = item.kind == .lcpdf ? .library : .contents
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -129,35 +129,21 @@ struct ContentView: View {
     private func copyCitation() {
         guard let session = library.readerSession,
               let item = library.items.first(where: { $0.id == session.itemID }) else { return }
-        let page = session.currentPageIndex + 1
-        let selected = session.selectedText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let citation: String
-        if selected.isEmpty {
-            citation = "\(item.title)\(item.author.map { " (\($0))" } ?? ""), p. \(page)."
-        } else {
-            citation = "“\(selected)” — \(item.title)\(item.author.map { " (\($0))" } ?? ""), p. \(page)."
-        }
-        if session.consumeCopyAllowance(characterCount: citation.count) {
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(citation, forType: .string)
-        } else {
+        let ok = session.clipboard.copyCitation(
+            title: item.title,
+            author: item.author,
+            page: session.currentPageIndex + 1,
+            excerpt: session.selectedText
+        )
+        if !ok {
             errorMessage = "Copy limit reached for this LCP license."
         }
-    }
-
-    /// Soft convenience: if the user already has common test PDFs, offer nothing automatic that mutates Downloads.
-    private func maybeImportDefaultTestFiles() {
-        // Intentionally empty — users open files explicitly.
     }
 }
 
 enum LeftSidebarTab: String, CaseIterable, Identifiable {
-    case library
-    case contents
-    case bookmarks
-
+    case library, contents, bookmarks
     var id: String { rawValue }
-
     var title: String {
         switch self {
         case .library: "Library"
@@ -165,7 +151,6 @@ enum LeftSidebarTab: String, CaseIterable, Identifiable {
         case .bookmarks: "Bookmarks"
         }
     }
-
     var systemImage: String {
         switch self {
         case .library: "books.vertical"
