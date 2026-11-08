@@ -63,18 +63,15 @@ struct PDFKitView: NSViewRepresentable {
         if abs(view.scaleFactor - zoomScale) > 0.01 {
             view.scaleFactor = zoomScale
         }
-        if let page = view.currentPage,
-           let index = document.index(for: page),
-           index != currentPageIndex,
-           let target = document.page(at: currentPageIndex) {
-            view.go(to: target)
+        if let page = view.currentPage {
+            let index = document.index(for: page)
+            if index != currentPageIndex, let target = document.page(at: currentPageIndex) {
+                view.go(to: target)
+            }
         }
         if let match = goToSearchMatch {
             view.setCurrentSelection(match, animate: true)
             view.go(to: match)
-        }
-        if !searchQuery.isEmpty {
-            // Highlighting is handled by selections from the parent search pass.
         }
     }
 
@@ -82,6 +79,7 @@ struct PDFKitView: NSViewRepresentable {
         NotificationCenter.default.removeObserver(coordinator)
     }
 
+    @MainActor
     final class Coordinator: NSObject, PDFViewDelegate {
         var parent: PDFKitView
         weak var pdfView: PDFView?
@@ -92,19 +90,14 @@ struct PDFKitView: NSViewRepresentable {
 
         @objc func selectionChanged(_ notification: Notification) {
             let text = pdfView?.currentSelection?.string ?? ""
-            DispatchQueue.main.async {
-                self.parent.selectedText = text
-            }
+            parent.selectedText = text
         }
 
         @objc func pageChanged(_ notification: Notification) {
             guard let view = pdfView,
                   let page = view.currentPage,
                   let document = view.document else { return }
-            let index = document.index(for: page)
-            DispatchQueue.main.async {
-                self.parent.currentPageIndex = index
-            }
+            parent.currentPageIndex = document.index(for: page)
         }
     }
 }

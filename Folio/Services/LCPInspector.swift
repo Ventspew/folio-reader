@@ -93,7 +93,7 @@ final class ZipReader {
                     return payload
                 }
                 if compression == 8 {
-                    return try inflate(payload, expectedSize: uncompSize)
+                    return try inflateRaw(payload, expectedSize: uncompSize)
                 }
                 throw ZipError.unsupportedCompression
             }
@@ -110,7 +110,7 @@ final class ZipReader {
         data.subdata(in: offset..<(offset + 4)).withUnsafeBytes { $0.load(as: UInt32.self) }.littleEndian
     }
 
-    private func inflate(_ input: Data, expectedSize: Int) throws -> Data {
+    private func inflateRaw(_ input: Data, expectedSize: Int) throws -> Data {
         var stream = z_stream()
         var status = inflateInit2_(&stream, -MAX_WBITS, ZLIB_VERSION, Int32(MemoryLayout<z_stream>.size))
         guard status == Z_OK else { throw ZipError.inflateFailed }
@@ -132,7 +132,7 @@ final class ZipReader {
                 output.withUnsafeMutableBufferPointer { outBuf in
                     stream.next_out = outBuf.baseAddress?.advanced(by: outOffset)
                     stream.avail_out = uInt(available)
-                    status = inflate(&stream, Z_FINISH)
+                    status = zlib.inflate(&stream, Z_FINISH)
                 }
                 outOffset = Int(stream.total_out)
             } while status == Z_OK || status == Z_BUF_ERROR
