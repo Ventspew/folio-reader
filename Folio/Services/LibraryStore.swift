@@ -7,7 +7,7 @@ import PDFKit
 final class LibraryStore {
     private(set) var items: [LibraryItem] = []
     var selectedItemID: UUID?
-    var readerSession: ReadingSession?
+    var readerSession: ReaderSession?
     var pendingPassphraseItemID: UUID?
     var passphrasePromptTitle: String = ""
     var showPassphraseSheet = false
@@ -99,7 +99,7 @@ final class LibraryStore {
         let result = try publications.open(url: url, passphrase: passphrase)
         switch result {
         case .pdf(let document, _):
-            readerSession = ReadingSession(
+            readerSession = ReaderSession(
                 itemID: item.id,
                 sourceURL: url,
                 securityScoped: accessed,
@@ -109,7 +109,7 @@ final class LibraryStore {
                 remainingCopy: nil
             )
         case .decryptedPDF(let document, let temp, let license, let remaining):
-            readerSession = ReadingSession(
+            readerSession = ReaderSession(
                 itemID: item.id,
                 sourceURL: url,
                 securityScoped: accessed,
@@ -120,7 +120,7 @@ final class LibraryStore {
                 remainingCopy: remaining
             )
         case .lcpRequiresPassphrase(let info):
-            readerSession = ReadingSession(
+            readerSession = ReaderSession(
                 itemID: item.id,
                 sourceURL: url,
                 securityScoped: accessed,
@@ -135,7 +135,7 @@ final class LibraryStore {
             passphrasePromptTitle = info.title ?? item.title
             showPassphraseSheet = true
         case .lcpRequiresClient(let info):
-            readerSession = ReadingSession(
+            readerSession = ReaderSession(
                 itemID: item.id,
                 sourceURL: url,
                 securityScoped: accessed,

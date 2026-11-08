@@ -8,7 +8,7 @@ enum PublicationFormat: String, Codable, Sendable {
     case unknown
 }
 
-enum PublicationOpenResult: Sendable {
+enum PublicationOpenResult {
     case pdf(PDFDocument, sourceURL: URL)
     /// Decrypted PDF bytes held in a secure temporary file for PDFKit.
     case decryptedPDF(PDFDocument, temporaryFile: URL, license: LCPLicenseInfo, remainingCopy: Int?)

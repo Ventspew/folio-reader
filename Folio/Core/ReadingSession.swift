@@ -3,7 +3,7 @@ import PDFKit
 
 @Observable
 @MainActor
-final class ReadingSession {
+final class ReaderSession {
     let itemID: UUID
     let sourceURL: URL
     let securityScoped: Bool
